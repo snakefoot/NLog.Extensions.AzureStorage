@@ -441,17 +441,17 @@ namespace NLog.Targets
                 }
             }
 
-            public void Connect(string connectionString, string entityPath, string serviceUri, string tenantIdentity, string resourceIdentity)
+            public void Connect(string connectionString, string eventHubName, string serviceUri, string tenantIdentity, string resourceIdentity)
             {
                 if (!string.IsNullOrEmpty(serviceUri))
                 {
                     var tokenCredentials = new AzureServiceTokenProviderCredentials(tenantIdentity, resourceIdentity);
-                    _client = new Azure.Messaging.EventHubs.Producer.EventHubProducerClient(serviceUri, entityPath, tokenCredentials);
+                    _client = new Azure.Messaging.EventHubs.Producer.EventHubProducerClient(serviceUri, eventHubName, tokenCredentials);
                 }
-                else if (string.IsNullOrEmpty(entityPath))
+                else if (string.IsNullOrEmpty(eventHubName))
                     _client = new Azure.Messaging.EventHubs.Producer.EventHubProducerClient(connectionString);
                 else
-                    _client = new Azure.Messaging.EventHubs.Producer.EventHubProducerClient(connectionString, entityPath);
+                    _client = new Azure.Messaging.EventHubs.Producer.EventHubProducerClient(connectionString, eventHubName);
             }
 
             public Task CloseAsync()
@@ -459,7 +459,7 @@ namespace NLog.Targets
                 return _client?.CloseAsync() ?? Task.CompletedTask;
             }
 
-            public Task SendAsync(IEnumerable<EventData> eventDataList, string partitionKey, CancellationToken cancellationToken)
+            public Task SendAsync(IEnumerable<EventData> eventDataBatch, string partitionKey, CancellationToken cancellationToken)
             {
                 if (_client == null)
                     throw new InvalidOperationException("EventHubClient has not been initialized");
@@ -475,9 +475,9 @@ namespace NLog.Targets
                 }
 
                 if (sendEventOptions != null)
-                    return _client.SendAsync(eventDataList, sendEventOptions, cancellationToken);
+                    return _client.SendAsync(eventDataBatch, sendEventOptions, cancellationToken);
                 else
-                    return _client.SendAsync(eventDataList, cancellationToken);
+                    return _client.SendAsync(eventDataBatch, cancellationToken);
             }
         }
     }
